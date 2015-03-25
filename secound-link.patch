@@ -1,0 +1,67 @@
+diff --git a/calendar.module b/calendar.module
+index 4bd9fea..69f3f31 100644
+--- a/calendar.module
++++ b/calendar.module
+@@ -90,6 +90,13 @@ function calendar_preprocess_date_views_pager(&$vars) {
+     $calendar_links[$current_path]['actions'][] = array('title' => t('Add @name', array('@name' => $name)), 'path' => $href);
+   }
+ 
++  if (!empty($view->date_info->calendar_date_link2) && !empty($view->date_info->url)
++  && (user_access("administer nodes") || user_access('create ' . $view->date_info->calendar_date_link2 . ' content'))) {
++    $name = node_type_get_name($view->date_info->calendar_date_link2);
++    $href = 'node/add/' . str_replace('_', '-', $view->date_info->calendar_date_link2);
++    $calendar_links[$current_path]['actions'][] = array('title' => t('Add @name', array('@name' => $name)), 'path' => $href);
++  }
++
+   // Pass this through drupal_alter() so it can be adjusted in custom code or in the theme.
+   drupal_alter('calendar_links', $calendar_links);
+ 
+diff --git a/includes/calendar_plugin_row.inc b/includes/calendar_plugin_row.inc
+index f728d18..61dbf5f 100644
+--- a/includes/calendar_plugin_row.inc
++++ b/includes/calendar_plugin_row.inc
+@@ -44,6 +44,7 @@ class calendar_plugin_row extends views_plugin_row_fields {
+     $options = parent::option_definition();
+     $options['date_fields'] = array('default' => array());
+     $options['calendar_date_link'] = array('default' => '');
++    $options['calendar_date_link2'] = array('default' => '');
+     $options['colors'] = array(
+       'contains' => array(
+         'legend' => array('default' => ''),
+@@ -68,8 +69,16 @@ class calendar_plugin_row extends views_plugin_row_fields {
+       '#type' => 'select',
+       '#default_value' => $this->options['calendar_date_link'],
+       '#options' => array('' => t('No link')) + node_type_get_names(),
++      );
++    //secound link
++    $form['calendar_date_link2'] = array(
++      '#title' => t('Add secound date link'),
++      '#type' => 'select',
++      '#default_value' => $this->options['calendar_date_link2'],
++      '#options' => array('' => t('No link')) + node_type_get_names(),
+       '#description' => t('Display a link to add a new date of the specified content type. Displayed only to users with appropriate permissions.'),
+       );
++    
+     $form['colors'] = array(
+       '#type' => 'fieldset',
+       '#title' => t('Legend Colors'),
+@@ -275,6 +284,10 @@ class calendar_plugin_row extends views_plugin_row_fields {
+           $node_type = $form_state['values']['row_options']['calendar_date_link'];
+           calendar_set_link('node', $node_type, $path);
+         }
++        if (!empty($form_state['values']['row_options']['calendar_date_link2'])) {
++          $node_type = $form_state['values']['row_options']['calendar_date_link2'];
++          calendar_set_link('node', $node_type, $path);
++        }
+       }
+     }
+   }
+@@ -310,7 +323,7 @@ class calendar_plugin_row extends views_plugin_row_fields {
+ 
+     // Let the style know if a link to create a new date is required.
+     $this->view->date_info->calendar_date_link = $this->options['calendar_date_link'];
+-
++    $this->view->date_info->calendar_date_link2 = $this->options['calendar_date_link2'];
+     // Identify the date argument and fields that apply to this view.
+     // Preload the Date Views field info for each field, keyed by the
+     // field name, so we know how to retrieve field values from the cached node.
